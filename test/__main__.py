@@ -7,7 +7,7 @@ from gzip_classifier import Classifier
 
 
 THIS_DIR = os.path.dirname(os.path.realpath(__file__))
-FIXTURES_DIR = os.path.join(os.path.dirname(THIS_DIR), 'fixtures')
+FIXTURES_DIR = os.path.join(THIS_DIR, 'fixtures')
 
 
 fields = (

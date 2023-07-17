@@ -7,7 +7,9 @@ This code is largely untested and was put together over a single weekend. Please
 
 ## Installation
 
+```
 pip install git+https://github.com:Sonictherocketman/gzip-classifier.git
+```
 
 *Installation via PyPi is coming soon.*
 

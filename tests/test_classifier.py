@@ -2,6 +2,7 @@ import csv
 import os
 
 import numpy as np
+import pytest
 
 from gzip_classifier import Classifier
 
@@ -38,6 +39,34 @@ def get_set(filename, text_column, label_column):
         ]
 
 
+@pytest.fixture
+def test_data():
+    test_set = np.array(get_set(
+        os.path.join(FIXTURES_DIR, 'test.txt'),
+        'description',
+        'category'
+    ))
+    return [description for description, _ in test_set]
+
+@pytest.fixture
+def training_data():
+    training_set = np.array(get_set(
+        os.path.join(FIXTURES_DIR, 'train.txt'),
+        'description',
+        'category'
+    ))
+    return [description for description, _ in training_set]
+
+@pytest.fixture
+def labels():
+    training_set = np.array(get_set(
+        os.path.join(FIXTURES_DIR, 'train.txt'),
+        'description',
+        'category'
+    ))
+    return [label for _, label in training_set]
+
+
 def test_classify(test_data, training_data, labels):
     classifier = Classifier()
     classifier.train(training_data, labels)
@@ -69,7 +98,7 @@ def test_file_inout_deserlialize(test_data, training_data, labels):
     with open('model.txt', 'wb') as f:
         f.write(classifier.model)
 
-    with open('model.txt', 'r', encoding='utf-8') as f:
+    with open('model.txt', 'rb') as f:
         classifier2 = Classifier.using_model(f.read())
         classifier2.is_ready
 
@@ -87,29 +116,3 @@ def test_file_inout_deserlialize_compact(test_data, training_data, labels):
         classifier2.is_ready
 
     assert str(classifier) == str(classifier2)
-
-
-def main():
-    test_set = np.array(get_set(
-        os.path.join(FIXTURES_DIR, 'test.txt'),
-        'description',
-        'category'
-    ))
-    training_set = np.array(get_set(
-        os.path.join(FIXTURES_DIR, 'train.txt'),
-        'description',
-        'category'
-    ))
-
-    test_data = [description for description, _ in test_set]
-    training_data = [description for description, _ in training_set]
-    labels = [label for _, label in training_set]
-
-    test_classify(test_data, training_data, labels)
-    test_serlialize(test_data, training_data, labels)
-    test_deserlialize(test_data, training_data, labels)
-    test_file_inout_deserlialize(test_data, training_data, labels)
-
-
-if __name__ == '__main__':
-    main()

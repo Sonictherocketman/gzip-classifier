@@ -125,7 +125,7 @@ class Classifier(object):
 
     @property
     def model(self):
-        """  """
+        """ A writeable version of the data model for this classifier. """
         if not self.is_trained:
             raise ValueError('Cannot export un-trained model.')
 
@@ -139,7 +139,7 @@ class Classifier(object):
 
     @model.setter
     def model(self, value):
-        """ A writeable version of the data model for this classifier. """
+        """ Update the data model for this classifier. """
         def _decode(item):
             return b64decode(item)
 

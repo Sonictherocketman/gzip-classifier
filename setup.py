@@ -15,7 +15,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/Sonictherocketman/gzip-classifier",
     project_urls={
-        "Bug Tracker": "https://github.com/Sonictherocketman/gzip-classifier/issues",
+        "Bug Tracker": "https://github.com/Sonictherocketman/gzip-classifier/issues",  # noqa
     },
     classifiers=[
         "Programming Language :: Python :: 3",

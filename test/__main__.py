@@ -42,7 +42,7 @@ def test_classify(test_data, training_data, labels):
     classifier = Classifier()
     classifier.train(training_data, labels)
     result = classifier.classify_bulk(test_data, k=10)
-    assert(len([r for r in result]) > 0)
+    assert len([r for r in result]) > 0
 
 
 def test_serlialize(test_data, training_data, labels):
@@ -50,7 +50,7 @@ def test_serlialize(test_data, training_data, labels):
     classifier.train(training_data, labels)
 
     model = classifier.model
-    assert(len(model) > 0)
+    assert len(model) > 0
 
 
 def test_deserlialize(test_data, training_data, labels):
@@ -60,7 +60,7 @@ def test_deserlialize(test_data, training_data, labels):
     model = classifier.model
 
     classifier2 = Classifier.using_model(model)
-    assert(classifier2.is_ready)
+    assert classifier2.is_ready
 
 
 def test_file_inout_deserlialize(test_data, training_data, labels):
@@ -73,10 +73,10 @@ def test_file_inout_deserlialize(test_data, training_data, labels):
         classifier2 = Classifier.using_model(f.read())
         classifier2.is_ready
 
-    assert(str(classifier) == str(classifier2))
+    assert str(classifier) == str(classifier2)
 
 
-def test_file_inout_deserlialize(test_data, training_data, labels):
+def test_file_inout_deserlialize_compact(test_data, training_data, labels):
     classifier = Classifier(training_data, labels, auto_train=True)
 
     with open('model.txt.gz', 'wb') as f:
@@ -86,7 +86,7 @@ def test_file_inout_deserlialize(test_data, training_data, labels):
         classifier2 = Classifier.using_compact_model(f.read())
         classifier2.is_ready
 
-    assert(str(classifier) == str(classifier2))
+    assert str(classifier) == str(classifier2)
 
 
 def main():

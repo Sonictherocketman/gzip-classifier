@@ -140,20 +140,17 @@ class Classifier(object):
     @model.setter
     def model(self, value):
         """ Update the data model for this classifier. """
-        def _decode(item):
-            return b64decode(item)
-
         training_data_lengths, labels = [], []
 
         for row in value.decode('utf-8').split('\n'):
             data, label = row.split(' ')
-            item = _decode(data)
-            item_gz = decompress(item)
+            item = b64decode(data)
+            item_text = decompress(item)
 
-            self.training_data.append(item)
-            self.training_data_gz.append(item_gz)
-            training_data_lengths.append(len(item_gz))
-            labels.append(_decode(label))
+            self.training_data.append(item_text)
+            self.training_data_gz.append(item)
+            training_data_lengths.append(len(item))
+            labels.append(b64decode(label).decode('utf-8'))
 
         self.training_data_lengths = np.array(training_data_lengths)
         self.labels = np.array(labels)

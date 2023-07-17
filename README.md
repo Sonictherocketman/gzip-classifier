@@ -77,6 +77,40 @@ for label in classifier.classify_bulk(samples, k=20)
 ```
 
 
+### Exporting & Importing the Model
+
+Once trained, the model can be exported and saved for later use.
+
+```
+# Normal export
+
+model_contents = classifier.model
+with open('model.txt', 'w') as f:
+    f.write(model_contents)
+
+# Compressed export
+
+model_contents = classifier.compact_model
+with open('model.gz', 'wb') as f:
+    f.write(model_contents)
+```
+
+You can easily load a model from disk like this:
+
+```
+# Normal import
+
+with open('model.txt', 'r') as f:
+    classifier = Classifier.using_model(f.read())
+
+# Compressed import
+
+model_contents = classifier.compact_model
+with open('model.gz', 'rb') as f:
+    classifier = Classifier.using_compact_model(f.read())
+```
+
+
 ## Testing
 
 Run the tests using the following command.

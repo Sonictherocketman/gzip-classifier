@@ -104,7 +104,7 @@ class Classifier(object):
             ncd = (Cx1_x2 - min(Cx1, Cx2)) / max(Cx1, Cx2)
             distance.append(ncd)
         sorted_idx = np.argsort(np.array(distance))
-        top_k_class = self.labels[sorted_idx[:self.k]]
+        top_k_class = self.labels[sorted_idx[:k]]
         return Counter(top_k_class).most_common(1)[0]
 
     def classify_bulk(self, samples, k=None):

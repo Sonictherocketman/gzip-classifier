@@ -71,7 +71,7 @@ class Classifier(object):
             self._raise_invalid_configuration()
 
         self.training_data_gz = [
-            compress(item) for item in self.training_data
+            compress(item.encode()) for item in self.training_data
         ]
 
         self.training_data_lengths = [

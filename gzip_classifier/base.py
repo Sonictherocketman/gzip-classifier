@@ -16,7 +16,8 @@ class BaseClassifier(object):
 
     def __repr__(self):
         size = len(self._model)
-        return f'Base<size: {size}, ready: {self.is_ready}>'
+        name = type(self).__name__
+        return f'{name}<size: {size}, ready: {self.is_ready}>'
 
     @classmethod
     def using_model(cls, model):
@@ -57,7 +58,10 @@ class BaseClassifier(object):
             raise ValueError('Cannot export un-trained model.')
 
         def _encode(item):
-            return b64encode(item).decode('utf-8')
+            if isinstance(item, bytes):
+                return b64encode(item).decode('utf-8')
+            else:
+                return b64encode(str(item).encode('utf-8')).decode('utf-8')
 
         return '\n'.join([
             ' '.join([_encode(item) for item in row])
@@ -65,11 +69,21 @@ class BaseClassifier(object):
         ]).encode('utf-8')
 
     @model.setter
-    def model(self, value):
+    def model(self, value: bytes):
         """ Update the data model for this classifier. """
+
+        def _decode(row: [bytes]):
+            items = [b64decode(item) for item in row]
+            return (
+                items[0].decode('utf-8'),
+                items[1],
+                float(items[2]),
+                items[3].decode('utf-8'),
+            )
+
         self._model = [
-            [b64decode(item).decode('utf-8') for item in row.split()]
-            for row in value.split('\n')
+            _decode(row.split())
+            for row in value.decode('utf-8').split('\n')
         ]
 
     @property

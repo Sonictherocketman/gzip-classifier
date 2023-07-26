@@ -64,10 +64,6 @@ class Classifier(BaseClassifier):
         if auto_train and training_data and labels:
             self.train(training_data, labels)
 
-    def __repr__(self):
-        size = len(self.training_data)
-        return f'Classifier<size: {size}, ready: {self.is_ready}>'
-
     def train(self, training_data, labels):
         """ Given the set of training data and labels, train the model. """
         self._model = sorted((

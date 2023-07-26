@@ -75,7 +75,7 @@ class BaseClassifier(object):
         def _decode(row: [bytes]):
             items = [b64decode(item) for item in row]
             return (
-                items[0].decode('utf-8'),
+                items[0],
                 items[1],
                 float(items[2]),
                 items[3].decode('utf-8'),

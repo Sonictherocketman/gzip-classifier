@@ -69,12 +69,12 @@ class Classifier(BaseClassifier):
         self._model = sorted((
             transform(item, label)
             for (item, label) in zip(training_data, labels)
-        ), key=lambda x: x[0])
+        ), key=lambda x: x[2])
 
         if not self.is_ready:
             self._raise_invalid_configuration()
 
-    def classify(self, sample, k=None):
+    def classify(self, sample, k=None, include_all=False):
         """ Attempt to classify the given text snippet using
         the training data and labels provided earlier.
 
@@ -90,6 +90,9 @@ class Classifier(BaseClassifier):
         for your data.
 
         Anecdotally, k=20 worked well for some uses.
+
+        Set include_all=True to get the list of labels (length k) that were
+        considered for classification.
         """
         k = k if k else self.k
 
@@ -100,12 +103,12 @@ class Classifier(BaseClassifier):
             for x2, _, Cx2, label in self._model
         ), key=lambda x: x[0])
 
-        return self._tabluate(candidates, k)
+        return self._tabluate(candidates, k, include_all=include_all)
 
-    def classify_bulk(self, samples, k=None):
+    def classify_bulk(self, samples, k=None, include_all=False):
         """ Perform classification on a list of text samples. """
         for sample in samples:
-            yield self.classify(sample, k=k)
+            yield self.classify(sample, k=k, include_all=include_all)
 
     @property
     def is_ready(self):
@@ -118,10 +121,14 @@ class Classifier(BaseClassifier):
                 'the number of training items must equal the number of labels.'
             )
 
-    def _tabluate(self, results, k):
+    def _tabluate(self, results, k, include_all=False):
         top_k = results[:k]
-        top_labels = (label for (_, label) in top_k)
-        return Counter(top_labels).most_common(1)[0]
+        top_labels = list(label for (_, label) in top_k)
+        most_common = Counter(top_labels).most_common(1)[0]
+        if include_all:
+            return (*most_common, top_labels)
+        else:
+            return most_common
 
 
 class ParallelClassifier(Classifier):
@@ -191,12 +198,12 @@ class ParallelClassifier(Classifier):
             transform_w_args,
             zip(training_data, labels),
             self.chunksize,
-        ), key=lambda x: x[0])
+        ), key=lambda x: x[2])
 
         if not self.is_ready:
             self._raise_invalid_configuration()
 
-    def classify(self, sample, k=None):
+    def classify(self, sample, k=None, include_all=False):
         """ Classify training data as per the method described in Classifier
         except this one is done within the context of the process pool.
         """
@@ -213,7 +220,8 @@ class ParallelClassifier(Classifier):
         )
         results = self.pool.imap(calc_distance_w_args, values, self.chunksize)
         candidates = sorted(results, key=lambda x: x[0])
-        return self._tabluate(candidates, k)
+
+        return self._tabluate(candidates, k, include_all=include_all)
 
     def _raise_invalid_pool(self):
         raise ValueError(

@@ -13,6 +13,8 @@ pip install git+https://github.com/Sonictherocketman/gzip-classifier
 
 *Installation via PyPi is coming soon.*
 
+There are no dependencies! `gzip-classifier` uses only the Python Standard Library.
+
 
 ## Usage
 

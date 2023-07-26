@@ -47,6 +47,11 @@ labels = [...]
 
 classifier = Classifier()
 classifier.train(training_data, labels)
+
+# OR
+
+with ParallelClassifier(processes=4) as classifier:
+    classifier.train(training_data, labels)
 ```
 
 
@@ -74,6 +79,21 @@ for label in classifier.classify_bulk(samples, k=20)
 
 >> 'a label'
 >> 'another label'
+```
+
+
+### Improving Performance
+
+The gzip classifier is highly parallelizable and so included in the package is a `ParallelClassifier` that uses Python's built in multiprocessing pool to delegate training and classifying samples across cores.
+
+The parallel classifier is best used as a context manager:
+
+```
+with ParallelClassifier(processes=4) as classifier:
+    classifier.train(training_data, labels)
+
+    sample = 'some text'
+    classifier.classify(sample, k=10)
 ```
 
 

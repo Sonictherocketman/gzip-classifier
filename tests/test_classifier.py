@@ -48,6 +48,7 @@ def test_data():
     ))
     return [description for description, _ in test_set]
 
+
 @pytest.fixture
 def training_data():
     training_set = np.array(get_set(
@@ -56,6 +57,7 @@ def training_data():
         'category'
     ))
     return [description for description, _ in training_set]
+
 
 @pytest.fixture
 def labels():

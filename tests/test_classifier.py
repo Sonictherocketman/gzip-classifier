@@ -1,7 +1,6 @@
 import csv
 import os
 
-import numpy as np
 import pytest
 
 from gzip_classifier import Classifier
@@ -41,31 +40,31 @@ def get_set(filename, text_column, label_column):
 
 @pytest.fixture
 def test_data():
-    test_set = np.array(get_set(
+    test_set = get_set(
         os.path.join(FIXTURES_DIR, 'test.txt'),
         'description',
         'category'
-    ))
+    )
     return [description for description, _ in test_set]
 
 
 @pytest.fixture
 def training_data():
-    training_set = np.array(get_set(
+    training_set = get_set(
         os.path.join(FIXTURES_DIR, 'train.txt'),
         'description',
         'category'
-    ))
+    )
     return [description for description, _ in training_set]
 
 
 @pytest.fixture
 def labels():
-    training_set = np.array(get_set(
+    training_set = get_set(
         os.path.join(FIXTURES_DIR, 'train.txt'),
         'description',
         'category'
-    ))
+    )
     return [label for _, label in training_set]
 
 

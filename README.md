@@ -2,7 +2,7 @@
 
 A python implementation of a gzip-based text classification system based on the algorithm described in "Less is More: Parameter-Free Text Classification with Gzip" by [Zhiying Jiang, Matthew Y.R. Yang, Mikhail Tsirlin, Raphael Tang, and Jimmy Lin](https://arxiv.org/pdf/2212.09410.pdf).
 
-This code is largely untested and was put together over a single weekend. Please don't get too mad if it doesn't really work.
+*This project is in active development. Please don't get mad if it doesn't work.*
 
 
 ## Installation

@@ -3,39 +3,13 @@ from gzip import compress
 from multiprocessing import Pool
 
 from .base import BaseClassifier
-
-
-Model = [(str, bytes, int, str)]
-
-
-def prepare_input(value: str):
-    return value.lower().encode()
-
-
-def calc_distance(x1: bytes, Cx1: int, x2: bytes, Cx2: int):
-    x1_x2 = x1 + b' ' + x2
-    Cx1_x2 = len(compress(x1_x2))
-    return (Cx1_x2 - min(Cx1, Cx2)) / max(Cx1, Cx2)
-
-
-def calc_distance_w_args(args):
-    x1, Cx1, x2, Cx2, label = args
-    return calc_distance(x1, Cx1, x2, Cx2), label
-
-
-def transform(item, label):
-    encoded_item = prepare_input(item)
-    compressed_item = compress(encoded_item)
-    return (
-        encoded_item,
-        compressed_item,
-        len(compressed_item),
-        label,
-    )
-
-
-def transform_w_args(args):
-    return transform(*args)
+from .utils import (
+    prepare_input,
+    calc_distance,
+    calc_distance_w_args,
+    transform,
+    transform_w_args,
+)
 
 
 class Classifier(BaseClassifier):

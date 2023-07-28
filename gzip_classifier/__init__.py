@@ -1,2 +1,2 @@
 from .classifier import Classifier, ParallelClassifier  # noqa
-from .quick import QuickClassifier
+from .quick import QuickClassifier  # noqa

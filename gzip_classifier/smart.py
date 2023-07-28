@@ -50,4 +50,12 @@ class SmartParallelClassifier(SmartClassifier, ParallelClassifier):
     training distribution as the SmartClassifier, but also provides the ability
     to spread the computation along multiple cores for both training and testing.
     """
-    pass
+
+    def get_candidates(self, x1, Cx1, k, overscan=None):
+        start, stop = self.get_indicies(Cx1, overscan)
+        values = (
+            (x1, Cx1, x2, Cx2, label)
+            for x2, _, Cx2, label in self._model[start:stop]
+        )
+        results = self.pool.imap(calc_distance_w_args, values, self.chunksize)
+        return sorted(results, key=lambda x: x[0])

@@ -1,5 +1,6 @@
 from gzip import compress
 from itertools import islice
+from statistics import stdev
 
 from .types import Model, Index
 
@@ -43,7 +44,7 @@ def batched(iterable: iter, n: int):
         yield batch
 
 
-def generate_index(model: Model, bin_size: int = 1_000) -> Index:
+def generate_simple_index(model: Model, bin_size: int = 1_000) -> Index:
     """ Generate an index that allows for quick and easy searching of the
     model based on lengths. The index essentially 'bins' the data into chunks
     which can be used to more precisely search the model rather than searching
@@ -51,12 +52,6 @@ def generate_index(model: Model, bin_size: int = 1_000) -> Index:
 
     The implementation of this chunking is likely very relevant to the performance
     of the quick search algorithm.
-
-    TODO: Improve Performance
-
-    Eventually this should instead batch the data by chunks of std
-    deviation since these naive chunks are likely very similar in composition
-    especially if the lengths of each item in the training set is very similar.
     """
     index = []
     i_start = 0
@@ -70,7 +65,7 @@ def generate_index(model: Model, bin_size: int = 1_000) -> Index:
     return index
 
 
-def add_overscan(start: int, end: int, bound: int, overscan: float = None):
+def add_percent_overscan(start: int, end: int, bound: int, overscan: float = None):
     """ Return new start and end values that are extended by the overscan
     percentage. These numbers are bounded by 0 and the bound such that all
     values are "0 <= x <= bound".
@@ -87,6 +82,69 @@ def add_overscan(start: int, end: int, bound: int, overscan: float = None):
 
     padding = int(bound * overscan)
     return max(0, start - padding), min(bound, end + padding)
+
+
+def generate_stdev_index(model: Model) -> (Index, float):
+    """ Return an index for the given model as well as the standard deviation
+    for the given model's compressed length.
+
+    This index generation process takes no configuration as it uses the standard
+    deviation to create the indicies. The chunks are any contiguous section of the
+    model of at least one standard deviation in length (though they may be longer
+    if two chunks would end with the same length value).
+    """
+    index = []
+    i_start = 0
+    deviation = round(stdev((row[2] for row in model)))
+
+    last_group = None
+    for chunk in batched(model, deviation):
+        first, last = chunk[0], chunk[-1]
+        current_group = (
+            (i_start, i_start + deviation),
+            (first[2], last[2])
+        )
+
+        if not last_group:
+            # Just started.
+            index.append(current_group)
+            last_group = current_group
+        elif current_group[1][1] == last_group[1][1]:
+            # The ending value is the same. Extend the last group.
+            last_group = (
+                (last_group[0][0], current_group[0][1]),
+                (last_group[1][0], current_group[1][1]),
+            )
+        else:
+            # This is a new group. Move forward.
+            if last_group not in index:
+                index.append(last_group)
+            last_group = current_group
+
+        i_start += deviation
+    return index, deviation
+
+
+def add_stdev_overscan(start: int, end: int, bound: int, overscan=True, stdev: int = None):
+    """ Return new start and end values that are extended by the standard
+    deviation. These numbers are bounded by 0 and the bound such that all
+    values are "0 <= x <= bound".
+
+    Supplying a false value for `overscan` will skip this process and return
+    the provided start, end values.
+
+    Example:
+
+    # To add an overscan of 20% to each end of the boundary consider the
+    # following example:
+    > add_overscan(100, 200, bound=225, stdev=10)
+    > (90, 210)
+
+    """
+    if not stdev:
+        return start, end
+
+    return max(0, start - stdev), min(bound, end + stdev)
 
 
 def get_likely_bin(index: Index, Cx1: int):
@@ -112,5 +170,5 @@ def get_likely_bin(index: Index, Cx1: int):
     return [
         positions
         for positions, lengths in index
-        if Cx1 >= lengths[0] and Cx1 < lengths[1]
+        if Cx1 >= lengths[0] and Cx1 <= lengths[1]
     ][0]

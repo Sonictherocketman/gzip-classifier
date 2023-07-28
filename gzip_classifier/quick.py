@@ -5,9 +5,9 @@ from .utils import (
     prepare_input,
     calc_distance,
     calc_distance_w_args,
-    generate_index,
+    generate_simple_index,
+    add_percent_overscan,
     get_likely_bin,
-    add_overscan,
 )
 
 
@@ -64,7 +64,7 @@ class QuickClassifier(Classifier):
     # TODO: Add import/export or recalc for importing models.
 
     def get_indicies(self, Cx1, overscan):
-        return add_overscan(
+        return add_percent_overscan(
             *get_likely_bin(self._index, Cx1),
             bound=len(self._model),
             overscan=overscan,
@@ -72,7 +72,7 @@ class QuickClassifier(Classifier):
 
     def train(self, training_data, labels):
         super().train(training_data, labels)
-        self._index = generate_index(self._model)
+        self._index = generate_simple_index(self._model, self.bin_size)
 
     def get_candidates(self, x1, Cx1, k, overscan=None):
         start, stop = self.get_indicies(Cx1, overscan)

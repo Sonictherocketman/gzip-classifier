@@ -51,6 +51,12 @@ class Classifier(BaseClassifier):
         if not self.is_ready:
             self._raise_invalid_configuration()
 
+    def get_candidates(self, x1, Cx1, k):
+        return sorted((
+            (calc_distance(x1, Cx1, x2, Cx2), label)
+            for x2, _, Cx2, label in self._model
+        ), key=lambda x: x[0])
+
     def classify(self, sample, k=None, include_all=False):
         """ Attempt to classify the given text snippet using
         the training data and labels provided earlier.
@@ -72,14 +78,9 @@ class Classifier(BaseClassifier):
         considered for classification.
         """
         k = k if k else self.k
-
         x1 = prepare_input(sample)
         Cx1 = len(compress(x1))
-        candidates = sorted((
-            (calc_distance(x1, Cx1, x2, Cx2), label)
-            for x2, _, Cx2, label in self._model
-        ), key=lambda x: x[0])
-
+        candidates = self.get_candidates(x1, Cx1, k)
         return self._tabluate(candidates, k, include_all=include_all)
 
     def classify_bulk(self, samples, k=None, include_all=False):
@@ -180,25 +181,16 @@ class ParallelClassifier(Classifier):
         if not self.is_ready:
             self._raise_invalid_configuration()
 
-    def classify(self, sample, k=None, include_all=False):
-        """ Classify training data as per the method described in Classifier
-        except this one is done within the context of the process pool.
-        """
+    def get_candidates(self, x1, Cx1, k):
         if not self.pool:
             self._raise_invalid_pool()
 
-        k = k if k else self.k
-
-        x1 = prepare_input(sample)
-        Cx1 = len(compress(x1))
         values = (
             (x1, Cx1, x2, Cx2, label)
             for x2, _, Cx2, label in self._model
         )
         results = self.pool.imap(calc_distance_w_args, values, self.chunksize)
-        candidates = sorted(results, key=lambda x: x[0])
-
-        return self._tabluate(candidates, k, include_all=include_all)
+        return sorted(results, key=lambda x: x[0])
 
     def _raise_invalid_pool(self):
         raise ValueError(

@@ -27,6 +27,9 @@ class QuickClassifier(Classifier):
     performance improvement at the cost of increasingly inaccurate results at
     higher N.
 
+    The `overscan` parameter should be a number between 0 and 1. The larger the
+    value of the overscan, the less performance gain will be had.
+
     Implementation Notes
     --------------------
 
@@ -60,29 +63,30 @@ class QuickClassifier(Classifier):
 
     # TODO: Add import/export or recalc for importing models.
 
-    def get_indicies(self, Cx1):
+    def get_indicies(self, Cx1, overscan):
         return add_overscan(
             *get_likely_bin(self._index, Cx1),
             bound=len(self._model),
-            overscan=self.overscan,
+            overscan=overscan,
         )
 
     def train(self, training_data, labels):
         super().train(training_data, labels)
         self._index = generate_index(self._model)
 
-    def classify(self, sample, k=None, include_all=True, overscan=None):
-        k = k if k else self.k
-
-        x1 = prepare_input(sample)
-        Cx1 = len(compress(x1))
-
-        start, stop = self.get_indicies(Cx1)
-        candidates = sorted((
+    def get_candidates(self, x1, Cx1, k, overscan=None):
+        start, stop = self.get_indicies(Cx1, overscan)
+        return sorted((
             (calc_distance(x1, Cx1, x2, Cx2), label)
             for x2, _, Cx2, label in self._model[start:stop]
         ), key=lambda x: x[0])
 
+    def classify(self, sample, k=None, include_all=True, overscan=None):
+        k = k if k else self.k
+        overscan = overscan if overscan else self.overscan
+        x1 = prepare_input(sample)
+        Cx1 = len(compress(x1))
+        candidates = self.get_candidates(x1, Cx1, k, overscan)
         return self._tabluate(candidates, k, include_all=include_all)
 
 
@@ -93,18 +97,11 @@ class QuickParallelClassifier(QuickClassifier, ParallelClassifier):
     performance improvement (N = # of cores).
     """
 
-    def classify(self, sample, k=None, include_all=True, overscan=None):
-        k = k if k else self.k
-
-        x1 = prepare_input(sample)
-        Cx1 = len(compress(x1))
-
-        start, stop = self.get_indicies(Cx1)
+    def get_candidates(self, x1, Cx1, k, overscan=None):
+        start, stop = self.get_indicies(Cx1, overscan)
         values = (
             (x1, Cx1, x2, Cx2, label)
             for x2, _, Cx2, label in self._model[start:stop]
         )
         results = self.pool.imap(calc_distance_w_args, values, self.chunksize)
-        candidates = sorted(results, key=lambda x: x[0])
-
-        return self._tabluate(candidates, k, include_all=include_all)
+        return sorted(results, key=lambda x: x[0])

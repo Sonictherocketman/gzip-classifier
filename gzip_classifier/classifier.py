@@ -5,6 +5,9 @@ from multiprocessing import Pool
 from .base import BaseClassifier
 
 
+Model = [(str, bytes, int, str)]
+
+
 def prepare_input(value: str):
     return value.lower().encode()
 

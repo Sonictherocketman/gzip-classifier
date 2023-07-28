@@ -34,7 +34,6 @@ class QuickClassifier(Classifier):
             bound=len(self._model),
             overscan=self.overscan,
         )
-        print(start, stop)
         candidates = sorted((
             (calc_distance(x1, Cx1, x2, Cx2), label)
             for x2, _, Cx2, label in self._model[start:stop]

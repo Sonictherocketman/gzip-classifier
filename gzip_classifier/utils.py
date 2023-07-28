@@ -81,7 +81,7 @@ def get_likely_bin(index: Index, Cx1: int):
         # in the training set, so use the first bin to match against.
         return first_positions
 
-    last_positions, last_lengths = index[0]
+    last_positions, last_lengths = index[-1]
     if Cx1 > last_lengths[0]:
         # In this case the input length is longer than any item
         # in the training set, so use the last bin to match against.

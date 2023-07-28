@@ -70,6 +70,25 @@ def generate_index(model: Model, bin_size: int = 1_000) -> Index:
     return index
 
 
+def add_overscan(start: int, end: int, bound: int, overscan: float = None):
+    """ Return new start and end values that are extended by the overscan
+    percentage. These numbers are bounded by 0 and the bound such that all
+    values are "0 <= x <= bound".
+
+    Example:
+
+    # To add an overscan of 20% to each end of the boundary consider the
+    # following example:
+    > add_overscan(100, 200, bound=225, overscan=0.2)
+    > (55, 225)
+    """
+    if overscan is None:
+        return start, end
+
+    padding = int(bound * overscan)
+    return max(0, start - padding), min(bound, end + padding)
+
+
 def get_likely_bin(index: Index, Cx1: int):
     """ Identify and return the indicies of the first bin that is likely
     to contain the items of the training set that are most similar to the

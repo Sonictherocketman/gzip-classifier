@@ -1,6 +1,6 @@
 from gzip import compress
 from itertools import islice
-from statistics import stdev
+from statistics import quantiles
 
 from .types import Model, Index
 
@@ -84,67 +84,27 @@ def add_percent_overscan(start: int, end: int, bound: int, overscan: float = Non
     return max(0, start - padding), min(bound, end + padding)
 
 
-def generate_stdev_index(model: Model) -> (Index, float):
-    """ Return an index for the given model as well as the standard deviation
-    for the given model's compressed length.
-
-    This index generation process takes no configuration as it uses the standard
-    deviation to create the indicies. The chunks are any contiguous section of the
-    model of at least one standard deviation in length (though they may be longer
-    if two chunks would end with the same length value).
+def generate_quantile_index(model: Model, n: int = 4) -> (Index, float):
+    """ Return an index for the given model based on the number of quantiles
+    given.
     """
     index = []
+    lengths = list(row[2] for row in model)
+    interval_values = [*quantiles(lengths, n=n), lengths[-1]]
+
     i_start = 0
-    deviation = round(stdev((row[2] for row in model)))
+    l_start = 0
+    for value in interval_values:
+        max_length = max(length for length in lengths if length <= value)
+        i = lengths.index(max_length)
+        index.append((
+            (i_start, i),
+            (l_start, max_length),
+        ))
+        l_start = max_length + 1
+        i_start = i
 
-    last_group = None
-    for chunk in batched(model, deviation):
-        first, last = chunk[0], chunk[-1]
-        current_group = (
-            (i_start, i_start + deviation),
-            (first[2], last[2])
-        )
-
-        if not last_group:
-            # Just started.
-            index.append(current_group)
-            last_group = current_group
-        elif current_group[1][1] == last_group[1][1]:
-            # The ending value is the same. Extend the last group.
-            last_group = (
-                (last_group[0][0], current_group[0][1]),
-                (last_group[1][0], current_group[1][1]),
-            )
-        else:
-            # This is a new group. Move forward.
-            if last_group not in index:
-                index.append(last_group)
-            last_group = current_group
-
-        i_start += deviation
-    return index, deviation
-
-
-def add_stdev_overscan(start: int, end: int, bound: int, overscan=True, stdev: int = None):
-    """ Return new start and end values that are extended by the standard
-    deviation. These numbers are bounded by 0 and the bound such that all
-    values are "0 <= x <= bound".
-
-    Supplying a false value for `overscan` will skip this process and return
-    the provided start, end values.
-
-    Example:
-
-    # To add an overscan of 20% to each end of the boundary consider the
-    # following example:
-    > add_overscan(100, 200, bound=225, stdev=10)
-    > (90, 210)
-
-    """
-    if not stdev:
-        return start, end
-
-    return max(0, start - stdev), min(bound, end + stdev)
+    return index
 
 
 def get_likely_bin(index: Index, Cx1: int):

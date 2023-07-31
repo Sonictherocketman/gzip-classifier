@@ -61,7 +61,21 @@ class QuickClassifier(Classifier):
         self.overscan = overscan
         super().__init__(*args, **kwargs)
 
-    # TODO: Add import/export or recalc for importing models.
+    def __repr__(self):
+        size = len(self._model)
+        name = type(self).__name__
+        return (
+            f'{name}<size: {size}, k: {self.k}, bin_size: {self.bin_size}, '
+            f'ready: {self.is_ready}>'
+        )
+
+    @property
+    def model_settings(self):
+        return {
+            **super().model_settings,
+            'overscan' : self.overscan,
+            'bin_size': self.bin_size,
+        }
 
     def get_indicies(self, Cx1, overscan):
         return add_percent_overscan(

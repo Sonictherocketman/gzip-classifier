@@ -3,7 +3,7 @@ import os
 
 import pytest
 
-from gzip_classifier import Classifier
+from gzip_classifier import Classifier, SmartClassifier
 
 
 THIS_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -94,13 +94,32 @@ def test_deserlialize(test_data, training_data, labels):
 
 
 def test_file_inout_deserlialize(test_data, training_data, labels):
-    classifier = Classifier(training_data, labels, auto_train=True)
+    classifier = Classifier(training_data, labels, auto_train=True, k=2)
 
     with open('model.txt', 'wb') as f:
         f.write(classifier.model)
 
     with open('model.txt', 'rb') as f:
         classifier2 = Classifier.using_model(f.read())
+        classifier2.is_ready
+
+    assert str(classifier) == str(classifier2)
+
+
+def test_file_inout_smart_deserlialize(test_data, training_data, labels):
+    classifier = SmartClassifier(
+        training_data,
+        labels,
+        auto_train=True,
+        k=2,
+        quantiles=3,
+    )
+
+    with open('model.txt', 'wb') as f:
+        f.write(classifier.model)
+
+    with open('model.txt', 'rb') as f:
+        classifier2 = SmartClassifier.using_model(f.read())
         classifier2.is_ready
 
     assert str(classifier) == str(classifier2)

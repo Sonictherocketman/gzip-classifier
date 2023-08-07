@@ -1,13 +1,17 @@
 from collections import Counter
 from gzip import compress
+from itertools import groupby
 from multiprocessing import Pool
 
 from .base import BaseClassifier
 from .utils import (
+    batched,
     prepare_input,
     calc_distance,
+    calc_distance_v2,
     calc_distance_w_args,
     transform,
+    transform_v2,
     transform_w_args,
 )
 
@@ -24,6 +28,7 @@ class Classifier(BaseClassifier):
 
     __slots__ = (
         '_model',
+        'chunksize',
         'k',
     )
 
@@ -33,9 +38,11 @@ class Classifier(BaseClassifier):
         labels=[],
         k=1,
         auto_train=True,
+        chunksize=1_000,
         **kwargs
     ):
         self.k = k
+        self.chunksize = chunksize
         super().__init__(**kwargs)
 
         if auto_train and training_data and labels:
@@ -44,17 +51,23 @@ class Classifier(BaseClassifier):
     def __repr__(self):
         size = len(self._model)
         name = type(self).__name__
-        return f'{name}<size: {size}, k: {self.k}, ready: {self.is_ready}>'
+        ready = 'ready' if self.is_ready else 'not ready'
+        chunksize = self.chunksize
+        return f'{name}<n: {size}, k: {self.k}, chunksize: {chunksize}, {ready}>'
 
     @property
     def model_settings(self):
-        return {**super().model_settings, 'k' : self.k}
+        return {
+            **super().model_settings,
+            'k' : self.k,
+            'chunksize': self.chunksize,
+        }
 
     def train(self, training_data, labels):
         """ Given the set of training data and labels, train the model. """
         self._model = sorted((
-            transform(item, label)
-            for (item, label) in zip(training_data, labels)
+            transform_v2(item, label)
+            for (item, label) in zip(training_data, labels) #self._group_and_sort(training_data, labels)
         ), key=lambda x: x[2])
 
         if not self.is_ready:
@@ -62,8 +75,14 @@ class Classifier(BaseClassifier):
 
     def get_candidates(self, x1, Cx1, k):
         return sorted((
-            (calc_distance(x1, Cx1, x2, Cx2), label)
+            (calc_distance_v2(x1, Cx1, x2, Cx2), label)
             for x2, _, Cx2, label in self._model
+        ), key=lambda x: x[0])
+
+    def get_candidates_v2(self, x1, Cx1, k):
+        return sorted((
+            (calc_distance_v2(x1, Cx1, obj, Cx2), label)
+            for x2, obj, Cx2, label in self._model
         ), key=lambda x: x[0])
 
     def classify(self, sample, k=None, include_all=False):
@@ -88,8 +107,8 @@ class Classifier(BaseClassifier):
         """
         k = k if k else self.k
         x1 = prepare_input(sample)
-        Cx1 = len(compress(x1))
-        candidates = self.get_candidates(x1, Cx1, k)
+        Cx1 = None #len(compress(x1))
+        candidates = self.get_candidates_v2(x1, Cx1, k)
         return self._tabluate(candidates, k, include_all=include_all)
 
     def classify_bulk(self, samples, k=None, include_all=False):
@@ -108,8 +127,23 @@ class Classifier(BaseClassifier):
                 'the number of training items must equal the number of labels.'
             )
 
+    def _group_and_sort(self, training_data, labels):
+        sorted_data = sorted(zip(training_data, labels), key=lambda x: x[1])
+        grouped_data = groupby(sorted_data, lambda x: x[1])
+        chunked_groups = (
+            (batched((text for text, _ in data), self.chunksize), label)
+            for (label, data) in grouped_data
+        )
+
+        return (
+            (' '.join(set(chunk)), label)
+            for (chunks, label) in chunked_groups
+            for chunk in chunks
+        )
+
     def _tabluate(self, results, k, include_all=False):
-        top_k = results[:k]
+        top_k = sorted(results, key=lambda x: x[0])[:k]
+        print(top_k)
         top_labels = list(label for (_, label) in top_k)
         most_common = Counter(top_labels).most_common(1)[0]
         if include_all:
@@ -146,11 +180,9 @@ class ParallelClassifier(Classifier):
     def __init__(
         self,
         processes=None,
-        chunksize=1_000,
         **kwargs,
     ):
         self.processes = processes
-        self.chunksize = chunksize
         self.pool = None
         super().__init__(**kwargs)
 
@@ -183,7 +215,7 @@ class ParallelClassifier(Classifier):
 
         self._model = sorted(self.pool.imap(
             transform_w_args,
-            zip(training_data, labels),
+            self._group_and_sort(training_data, labels),
             self.chunksize,
         ), key=lambda x: x[2])
 

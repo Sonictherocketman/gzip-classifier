@@ -1,6 +1,7 @@
 from gzip import compress
 from itertools import islice
 from statistics import quantiles
+import zlib
 
 from .types import Model, Index
 
@@ -15,6 +16,12 @@ def calc_distance(x1: bytes, Cx1: int, x2: bytes, Cx2: int):
     return (Cx1_x2 - min(Cx1, Cx2)) / max(Cx1, Cx2)
 
 
+def calc_distance_v2(x1: bytes, Cx1: int, x2: bytes, Cx2: int):
+    x2_new = x2.copy()
+    Cx1_new = len(x2_new.compress(x1) + x2_new.flush())
+    return abs(Cx1_new - Cx2)
+
+
 def calc_distance_w_args(args):
     x1, Cx1, x2, Cx2, label = args
     return calc_distance(x1, Cx1, x2, Cx2), label
@@ -26,6 +33,19 @@ def transform(item: str, label: str):
     return (
         encoded_item,
         compressed_item,
+        len(compressed_item),
+        label,
+    )
+
+
+def transform_v2(item: str, label: str):
+    encoded_item = prepare_input(item)
+    compressor = zlib.compressobj(zdict=encoded_item)
+    c_copy = compressor.copy()
+    compressed_item = c_copy.compress(encoded_item) + c_copy.flush()
+    return (
+        encoded_item,
+        compressor,
         len(compressed_item),
         label,
     )

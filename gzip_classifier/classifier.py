@@ -26,8 +26,10 @@ class Classifier(NaiveClassifier):
         self,
         chunksize=100_000,
         dictionary_size=15_000_000_000,
+        tally_method='vote',
         **kwargs
     ):
+        self.tally_method = tally_method
         self.chunksize = chunksize
         self.dictionary_size = dictionary_size
         super().__init__(**kwargs)
@@ -45,6 +47,7 @@ class Classifier(NaiveClassifier):
             **super().model_settings,
             'chunksize': self.chunksize,
             'dictionary_size': self.dictionary_size,
+            'tally_method': self.tally_method,
         }
 
     # TODO: Fix model serialization since format changed
@@ -85,31 +88,31 @@ class Classifier(NaiveClassifier):
         )
 
     def _tabluate(self, results, k, include_all=False):
+        if self.tally_method == 'average':
+            tabluated_results = { label: 0 for _, label in results }
+            for value, label in results:
+                tabluated_results[label] += value
 
-        # Sums
+            averaged_results = {
+                key: value / len([label for _, label in results if label == key])
+                for key, value in tabluated_results.items()
+            }
 
-        tabluated_results = { label: 0 for _, label in results }
-        for value, label in results:
-            tabluated_results[label] += value
+            top_k = list(reversed(Counter(averaged_results).most_common()))[:k]
+            most_common = top_k[0]
+            if include_all:
+                return (*most_common, top_k)
+            else:
+                return most_common
 
-#         top_k = list(reversed(Counter(tabluated_results).most_common()))[:k]
-#         print(tabluated_results)
-#         most_common = top_k[0]
-#         if include_all:
-#             return (*most_common, top_k)
-#         else:
-#             return most_common
-#
-        # Votes
-
-        top_k = sorted(results, key=lambda x: x[0])[:k]
-        top_labels = list(label for (_, label) in top_k)
-        most_common = Counter(top_labels).most_common(1)[0]
-        if include_all:
-            return (*most_common, top_labels)
-        else:
-            return most_common
-
+        elif self.tally_method == 'vote':
+            top_k = sorted(results, key=lambda x: x[0])[:k]
+            top_labels = list(label for (_, label) in top_k)
+            most_common = Counter(top_labels).most_common(1)[0]
+            if include_all:
+                return (*most_common, top_labels)
+            else:
+                return most_common
 
 
 class ParallelClassifier(ParallelNaiveClassifier):

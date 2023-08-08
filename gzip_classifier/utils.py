@@ -37,13 +37,10 @@ def transform(item: str, label: str):
     )
 
 
-def transform_v2(item: str, label: str, length=70):
-    dictionary = generate_compression_dictionary(item, length=length)
+def transform_v2(item: str, label: str, length: int):
+    dictionary = generate_compression_dictionary(item, length)
     compressor = zlib.compressobj(zdict=dictionary)
-    return (
-        compressor,
-        label,
-    )
+    return compressor, label
 
 
 def transform_w_args(args: (str, str)):
@@ -150,7 +147,7 @@ def get_likely_bin(index: Index, Cx1: int):
 
 
 
-def generate_compression_dictionary(input: str, length=70):
+def generate_compression_dictionary(input: str, length: int):
     # Using the method described here: https://stackoverflow.com/a/2349728
     counter = Counter(input.lower().split())
     sorted_words = (word for (word, _) in counter.most_common())

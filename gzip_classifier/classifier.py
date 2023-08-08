@@ -1,3 +1,4 @@
+from base64 import b64decode
 from collections import Counter
 from gzip import compress
 from itertools import groupby
@@ -40,11 +41,22 @@ class Classifier(NaiveClassifier):
             'tally_method': self.tally_method,
         }
 
-    # TODO: test model serialization since format changed
+    def encode_row(self, row):
+        compressor, rest = row[0], row[1:]
+        # TODO: We need to persist the compressor header.
+        # Which is not available in the default compressor object.
+        return super().encode_row([header, *rest])
+
+    def decode_row(self, row:[bytes]):
+        items = [b64decode(item) for item in row]
+        return (
+            items[0],
+            items[1].decode('utf-8'),
+        )
 
     def train(self, training_data, labels):
         self._model = [
-            transform_v2(item, label, length=self.dictionary_size)
+            transform_v2(item, label, self.dictionary_size)
             for (item, label) in self._group_and_sort(training_data, labels)
         ]
 

@@ -19,6 +19,7 @@ class SmartClassifier(QuickClassifier):
 
     def __init__(self, *args, quantiles=10, **kwargs):
         self.quantiles = quantiles
+        self.index = []
         super().__init__(*args, **kwargs)
 
     def __repr__(self):
@@ -31,18 +32,22 @@ class SmartClassifier(QuickClassifier):
 
     @property
     def model_settings(self):
-        return {**super().model_settings, 'quantiles' : self.quantiles}
+        return {
+            **super().model_settings,
+            'quantiles' : self.quantiles,
+            'index': self.index,
+        }
 
     def get_indicies(self, Cx1, overscan):
         return add_percent_overscan(
-            *get_likely_bin(self._index, Cx1),
+            *get_likely_bin(self.index, Cx1),
             bound=len(self._model),
             overscan=overscan,
         )
 
     def train(self, training_data, labels):
         super().train(training_data, labels)
-        self._index = generate_quantile_index(self._model, self.quantiles)
+        self.index = generate_quantile_index(self._model, self.quantiles)
 
 
 class SmartParallelClassifier(SmartClassifier, ParallelClassifier):

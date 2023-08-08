@@ -80,8 +80,8 @@ class BaseClassifier(object):
 
         settings = [
             f'# Gzip Classifier Model Version {self.version}',
-            f'# This file contains model data with the following settings:',
-            f'#',
+            '# This file contains model data with the following settings:',
+            '#',
             f'# {json.dumps(self.model_settings)}',
         ]
 
@@ -95,7 +95,7 @@ class BaseClassifier(object):
             *model_data,
         ]).encode('utf-8')
 
-    def decode_row(self, row:[bytes]):
+    def decode_row(self, row: [bytes]):
         items = [b64decode(item) for item in row]
         return (
             items[0],
@@ -127,7 +127,7 @@ class BaseClassifier(object):
             if _is_configuration(row):
                 self.decode_row(row)
             else:
-                self._model.append(_decode(row.split()))
+                self._model.append(self.decode_row(row.split()))
 
     @property
     def compact_model(self):

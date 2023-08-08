@@ -1,10 +1,51 @@
 from collections import Counter
-from gzip import compress
+import gzip
 from itertools import islice
 from statistics import quantiles
+import sys
 import zlib
 
+try:
+    import zstandard
+except ImportError:
+    print(
+        '[Warning] zstandard library not found. Falling back to gzip.',
+        file=sys.stderr,
+    )
+    zstandard = None
+
 from .types import Model, Index
+
+
+class TransparentZstandardCompressionObj:
+
+    def __init__(self, compressor):
+        self.compressor = compressor
+
+    def copy(self):
+        return self
+
+    def flush(self):
+        return b''
+
+    def compress(self, data):
+        return self.compressor.compress(data)
+
+
+def compress(data):
+    if zstandard:
+        compressor = zstandard.ZstdCompressor(0)
+        return compressor.compress(data)
+    else:
+        return gzip.compress(data)
+
+
+def get_compressor(data):
+    if zstandard:
+        compressor = zstandard.ZstdCompressor(dict_data=data)
+        return TransparentZstandardCompressionObj(compressor)
+    else:
+        return zlib.compressobj(zdict=data)
 
 
 def prepare_input(value: str):
@@ -39,7 +80,7 @@ def transform(item: str, label: str):
 
 def transform_v2(item: str, label: str, length: int):
     dictionary = generate_compression_dictionary(item, length)
-    compressor = zlib.compressobj(zdict=dictionary)
+    compressor = get_compressor(dictionary)
     return compressor, label
 
 
@@ -146,9 +187,14 @@ def get_likely_bin(index: Index, Cx1: int):
     ][0]
 
 
-
-def generate_compression_dictionary(input: str, length: int):
-    # Using the method described here: https://stackoverflow.com/a/2349728
-    counter = Counter(input.lower().split())
-    sorted_words = (word for (word, _) in counter.most_common())
-    return ''.join(sorted_words)[:length].encode()
+def generate_compression_dictionary(data: [str], length: int):
+    if zstandard:
+        return zstandard.train_dictionary(length, [
+            item.encode('utf-8') for item in data
+        ])
+    else:
+        # Using the method described here: https://stackoverflow.com/a/2349728
+        words = '\n'.join(data).lower().split()
+        counter = Counter(words)
+        sorted_words = (word for (word, _) in counter.most_common())
+        return ''.join(sorted_words)[:length].encode('utf-8')

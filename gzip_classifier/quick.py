@@ -1,5 +1,3 @@
-from gzip import compress
-
 from .naive import NaiveClassifier, ParallelNaiveClassifier
 from .utils import (
     prepare_input,
@@ -8,6 +6,7 @@ from .utils import (
     generate_simple_index,
     add_percent_overscan,
     get_likely_bin,
+    compress,
 )
 
 
@@ -73,7 +72,7 @@ class QuickClassifier(NaiveClassifier):
     def model_settings(self):
         return {
             **super().model_settings,
-            'overscan' : self.overscan,
+            'overscan': self.overscan,
             'bin_size': self.bin_size,
         }
 

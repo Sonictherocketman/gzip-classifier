@@ -1,8 +1,6 @@
 from base64 import b64decode
-from collections import Counter
-from gzip import compress
 from itertools import groupby
-from multiprocessing import Pool
+# from multiprocessing import Pool
 
 from .naive import NaiveClassifier, ParallelNaiveClassifier
 from .utils import (
@@ -17,7 +15,7 @@ class Classifier(NaiveClassifier):
 
     def __init__(
         self,
-        chunksize=20,
+        chunksize=int(1e10),
         dictionary_size=int(1e10),
         **kwargs
     ):
@@ -47,7 +45,7 @@ class Classifier(NaiveClassifier):
         # Which is not available in the default compressor object.
         return super().encode_row([header, *rest])
 
-    def decode_row(self, row:[bytes]):
+    def decode_row(self, row: [bytes]):
         items = [b64decode(item) for item in row]
         return (
             items[0],
@@ -84,7 +82,7 @@ class Classifier(NaiveClassifier):
         )
 
         return (
-            ('\n'.join(set(chunk)), label)
+            (chunk, label)
             for (chunks, label) in chunked_groups
             for chunk in chunks
         )

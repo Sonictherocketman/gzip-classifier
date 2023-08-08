@@ -1,5 +1,4 @@
 from collections import Counter
-from gzip import compress
 from multiprocessing import Pool
 
 from .base import BaseClassifier
@@ -9,6 +8,7 @@ from .utils import (
     calc_distance_w_args,
     transform,
     transform_w_args,
+    compress,
 )
 
 
@@ -24,6 +24,7 @@ class NaiveClassifier(BaseClassifier):
 
     __slots__ = (
         '_model',
+        'tally_method',
         'k',
     )
 
@@ -53,7 +54,7 @@ class NaiveClassifier(BaseClassifier):
     def model_settings(self):
         return {
             **super().model_settings,
-            'k' : self.k,
+            'k': self.k,
             'tally_method': self.tally_method,
         }
 
@@ -117,7 +118,7 @@ class NaiveClassifier(BaseClassifier):
 
     def _tabluate(self, results, k, include_all=False):
         if self.tally_method == 'average':
-            tabluated_results = { label: 0 for _, label in results }
+            tabluated_results = {label: 0 for _, label in results}
             for value, label in results:
                 tabluated_results[label] += value
 

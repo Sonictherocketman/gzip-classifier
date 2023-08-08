@@ -1,10 +1,6 @@
-from gzip import compress
-
 from .naive import ParallelNaiveClassifier
 from .quick import QuickClassifier
 from .utils import (
-    prepare_input,
-    calc_distance,
     calc_distance_w_args,
     generate_quantile_index,
     add_percent_overscan,
@@ -31,7 +27,7 @@ class SmartClassifier(QuickClassifier):
 
     @property
     def model_settings(self):
-        return {**super().model_settings, 'quantiles' : self.quantiles}
+        return {**super().model_settings, 'quantiles': self.quantiles}
 
     def get_indicies(self, Cx1, overscan):
         return add_percent_overscan(

@@ -150,9 +150,11 @@ class ParallelNaiveClassifier(NaiveClassifier):
     def __init__(
         self,
         processes=None,
+        chunksize=1_000,
         **kwargs,
     ):
         self.processes = processes
+        self.chunksize = chunksize
         self.pool = None
         super().__init__(**kwargs)
 

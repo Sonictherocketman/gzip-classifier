@@ -3,36 +3,13 @@ from gzip import compress
 from multiprocessing import Pool
 
 from .base import BaseClassifier
-
-
-def prepare_input(value: str):
-    return value.lower().encode()
-
-
-def calc_distance(x1: bytes, Cx1: int, x2: bytes, Cx2: int):
-    x1_x2 = x1 + b' ' + x2
-    Cx1_x2 = len(compress(x1_x2))
-    return (Cx1_x2 - min(Cx1, Cx2)) / max(Cx1, Cx2)
-
-
-def calc_distance_w_args(args):
-    x1, Cx1, x2, Cx2, label = args
-    return calc_distance(x1, Cx1, x2, Cx2), label
-
-
-def transform(item, label):
-    encoded_item = prepare_input(item)
-    compressed_item = compress(encoded_item)
-    return (
-        encoded_item,
-        compressed_item,
-        len(compressed_item),
-        label,
-    )
-
-
-def transform_w_args(args):
-    return transform(*args)
+from .utils import (
+    prepare_input,
+    calc_distance,
+    calc_distance_w_args,
+    transform,
+    transform_w_args,
+)
 
 
 class Classifier(BaseClassifier):
@@ -64,6 +41,15 @@ class Classifier(BaseClassifier):
         if auto_train and training_data and labels:
             self.train(training_data, labels)
 
+    def __repr__(self):
+        size = len(self._model)
+        name = type(self).__name__
+        return f'{name}<size: {size}, k: {self.k}, ready: {self.is_ready}>'
+
+    @property
+    def model_settings(self):
+        return {**super().model_settings, 'k' : self.k}
+
     def train(self, training_data, labels):
         """ Given the set of training data and labels, train the model. """
         self._model = sorted((
@@ -73,6 +59,12 @@ class Classifier(BaseClassifier):
 
         if not self.is_ready:
             self._raise_invalid_configuration()
+
+    def get_candidates(self, x1, Cx1, k):
+        return sorted((
+            (calc_distance(x1, Cx1, x2, Cx2), label)
+            for x2, _, Cx2, label in self._model
+        ), key=lambda x: x[0])
 
     def classify(self, sample, k=None, include_all=False):
         """ Attempt to classify the given text snippet using
@@ -95,14 +87,9 @@ class Classifier(BaseClassifier):
         considered for classification.
         """
         k = k if k else self.k
-
         x1 = prepare_input(sample)
         Cx1 = len(compress(x1))
-        candidates = sorted((
-            (calc_distance(x1, Cx1, x2, Cx2), label)
-            for x2, _, Cx2, label in self._model
-        ), key=lambda x: x[0])
-
+        candidates = self.get_candidates(x1, Cx1, k)
         return self._tabluate(candidates, k, include_all=include_all)
 
     def classify_bulk(self, samples, k=None, include_all=False):
@@ -203,25 +190,16 @@ class ParallelClassifier(Classifier):
         if not self.is_ready:
             self._raise_invalid_configuration()
 
-    def classify(self, sample, k=None, include_all=False):
-        """ Classify training data as per the method described in Classifier
-        except this one is done within the context of the process pool.
-        """
+    def get_candidates(self, x1, Cx1, k):
         if not self.pool:
             self._raise_invalid_pool()
 
-        k = k if k else self.k
-
-        x1 = prepare_input(sample)
-        Cx1 = len(compress(x1))
         values = (
             (x1, Cx1, x2, Cx2, label)
             for x2, _, Cx2, label in self._model
         )
         results = self.pool.imap(calc_distance_w_args, values, self.chunksize)
-        candidates = sorted(results, key=lambda x: x[0])
-
-        return self._tabluate(candidates, k, include_all=include_all)
+        return sorted(results, key=lambda x: x[0])
 
     def _raise_invalid_pool(self):
         raise ValueError(

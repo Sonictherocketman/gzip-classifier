@@ -93,7 +93,7 @@ class NaiveClassifier(BaseClassifier):
         k = k if k else self.k
         x1 = prepare_input(sample)
         Cx1 = len(compress(x1))
-        candidates = self.get_candidates_v2(x1, Cx1, k)
+        candidates = self.get_candidates(x1, Cx1, k)
         return self._tabluate(candidates, k, include_all=include_all)
 
     def classify_bulk(self, samples, k=None, include_all=False):

@@ -17,7 +17,7 @@ def calc_distance(x1: bytes, Cx1: int, x2: bytes, Cx2: int):
     return (Cx1_x2 - min(Cx1, Cx2)) / max(Cx1, Cx2)
 
 
-def calc_distance_v2(x1: bytes, compressor, length: int):
+def calc_distance_v2(x1: bytes, compressor: object):
     return len(compressor.compress(x1) + compressor.flush())
 
 
@@ -40,13 +40,8 @@ def transform(item: str, label: str):
 def transform_v2(item: str, label: str, length=70):
     dictionary = generate_compression_dictionary(item, length=length)
     compressor = zlib.compressobj(zdict=dictionary)
-    c_copy = compressor.copy()
-
-    encoded_item = prepare_input(item)
-    compressed_item = c_copy.compress(encoded_item) + c_copy.flush()
     return (
         compressor,
-        len(compressed_item),
         label,
     )
 

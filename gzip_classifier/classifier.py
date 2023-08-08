@@ -13,23 +13,13 @@ from .utils import (
 
 
 class Classifier(NaiveClassifier):
-    """ A text-classification system that uses gzip to perform similarity
-    comparisons and kNN to determine classification.
-
-    This class implements the methods described in “Low-Resource” Text
-    Classification: A Parameter-Free Classification Method with Compressors
-
-    See https://arxiv.org/pdf/2212.09410.pdf for more information.
-    """
 
     def __init__(
         self,
-        chunksize=100_000,
-        dictionary_size=15_000_000_000,
-        tally_method='vote',
+        chunksize=20,
+        dictionary_size=int(1e10),
         **kwargs
     ):
-        self.tally_method = tally_method
         self.chunksize = chunksize
         self.dictionary_size = dictionary_size
         super().__init__(**kwargs)
@@ -50,22 +40,22 @@ class Classifier(NaiveClassifier):
             'tally_method': self.tally_method,
         }
 
-    # TODO: Fix model serialization since format changed
+    # TODO: test model serialization since format changed
 
     def train(self, training_data, labels):
-        self._model = sorted((
+        self._model = [
             transform_v2(item, label, length=self.dictionary_size)
             for (item, label) in self._group_and_sort(training_data, labels)
-        ), key=lambda x: x[2])
+        ]
 
         if not self.is_ready:
             self._raise_invalid_configuration()
 
     def get_candidates(self, sample, k):
-        return sorted((
-            (calc_distance_v2(sample, compressor.copy(), length), label)
-            for compressor, length, label in self._model
-        ), key=lambda x: x[0])
+        return (
+            (calc_distance_v2(sample, compressor.copy()), label)
+            for compressor, label in self._model
+        )
 
     def classify(self, sample, k=None, include_all=False):
         k = k if k else self.k
@@ -86,33 +76,6 @@ class Classifier(NaiveClassifier):
             for (chunks, label) in chunked_groups
             for chunk in chunks
         )
-
-    def _tabluate(self, results, k, include_all=False):
-        if self.tally_method == 'average':
-            tabluated_results = { label: 0 for _, label in results }
-            for value, label in results:
-                tabluated_results[label] += value
-
-            averaged_results = {
-                key: value / len([label for _, label in results if label == key])
-                for key, value in tabluated_results.items()
-            }
-
-            top_k = list(reversed(Counter(averaged_results).most_common()))[:k]
-            most_common = top_k[0]
-            if include_all:
-                return (*most_common, top_k)
-            else:
-                return most_common
-
-        elif self.tally_method == 'vote':
-            top_k = sorted(results, key=lambda x: x[0])[:k]
-            top_labels = list(label for (_, label) in top_k)
-            most_common = Counter(top_labels).most_common(1)[0]
-            if include_all:
-                return (*most_common, top_labels)
-            else:
-                return most_common
 
 
 class ParallelClassifier(ParallelNaiveClassifier):

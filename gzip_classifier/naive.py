@@ -33,9 +33,11 @@ class NaiveClassifier(BaseClassifier):
         labels=[],
         k=1,
         auto_train=True,
+        tally_method='vote',
         **kwargs
     ):
         self.k = k
+        self.tally_method = tally_method
         super().__init__(**kwargs)
 
         if auto_train and training_data and labels:
@@ -52,6 +54,7 @@ class NaiveClassifier(BaseClassifier):
         return {
             **super().model_settings,
             'k' : self.k,
+            'tally_method': self.tally_method,
         }
 
     def train(self, training_data, labels):
@@ -113,13 +116,31 @@ class NaiveClassifier(BaseClassifier):
             )
 
     def _tabluate(self, results, k, include_all=False):
-        top_k = sorted(results, key=lambda x: x[0])[:k]
-        top_labels = list(label for (_, label) in top_k)
-        most_common = Counter(top_labels).most_common(1)[0]
-        if include_all:
-            return (*most_common, top_labels)
-        else:
-            return most_common
+        if self.tally_method == 'average':
+            tabluated_results = { label: 0 for _, label in results }
+            for value, label in results:
+                tabluated_results[label] += value
+
+            averaged_results = {
+                key: value / len([label for _, label in results if label == key])
+                for key, value in tabluated_results.items()
+            }
+
+            top_k = list(reversed(Counter(averaged_results).most_common()))[:k]
+            most_common = top_k[0]
+            if include_all:
+                return (*most_common, top_k)
+            else:
+                return most_common
+
+        elif self.tally_method == 'vote':
+            top_k = sorted(results, key=lambda x: x[0])[:k]
+            top_labels = list(label for (_, label) in top_k)
+            most_common = Counter(top_labels).most_common(1)[0]
+            if include_all:
+                return (*most_common, top_labels)
+            else:
+                return most_common
 
 
 class ParallelNaiveClassifier(NaiveClassifier):

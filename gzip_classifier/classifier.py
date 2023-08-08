@@ -16,7 +16,7 @@ from .utils import (
 )
 
 
-class NaiveClassifier(BaseClassifier):
+class Classifier(BaseClassifier):
     """ A text-classification system that uses gzip to perform similarity
     comparisons and kNN to determine classification.
 
@@ -152,7 +152,7 @@ class NaiveClassifier(BaseClassifier):
             return most_common
 
 
-class ParallelNaiveClassifier(NaiveClassifier):
+class ParallelClassifier(NaiveClassifier):
     """ A version of the classic serial NaiveClassifier class that performs both
     training and classification in parallel using a process pool.
 

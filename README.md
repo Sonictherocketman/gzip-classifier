@@ -13,7 +13,9 @@ pip install git+https://github.com/Sonictherocketman/gzip-classifier
 
 *Installation via PyPi is coming soon.*
 
-There are no dependencies! `gzip-classifier` uses only the Python Standard Library.
+There are no dependencies! `gzip-classifier` runs with only the Python Standard Library.
+
+That said, you may choose to install the `zstandard` library which improves performance and accuracy significantly.
 
 
 ## Usage

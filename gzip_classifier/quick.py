@@ -1,6 +1,6 @@
 from gzip import compress
 
-from .classifier import Classifier, ParallelClassifier
+from .naive import NaiveClassifier, ParallelNaiveClassifier
 from .utils import (
     prepare_input,
     calc_distance,
@@ -11,7 +11,7 @@ from .utils import (
 )
 
 
-class QuickClassifier(Classifier):
+class QuickClassifier(NaiveClassifier):
     """ A serial classifier that uses indexing & binning to avoid searching
     the entire training set.
 
@@ -104,7 +104,7 @@ class QuickClassifier(Classifier):
         return self._tabluate(candidates, k, include_all=include_all)
 
 
-class QuickParallelClassifier(QuickClassifier, ParallelClassifier):
+class QuickParallelClassifier(QuickClassifier, ParallelNaiveClassifier):
     """ This classifier leverages the bin scanning and overscan method
     implemented in the QuickClassifier but also leverages multi-core processing
     to perform the comparisons within a bin resulting in a roughly N times

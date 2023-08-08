@@ -152,3 +152,11 @@ def get_likely_bin(index: Index, Cx1: int):
         for positions, lengths in index
         if Cx1 >= lengths[0] and Cx1 <= lengths[1]
     ][0]
+
+
+
+def generate_compression_dictionary(input: str, length=70):
+    # Using the method described here: https://stackoverflow.com/a/2349728
+    counter = Counter(input.lower().split())
+    sorted_words = (word for (word, _) in counter.most_common())
+    return ''.join(sorted_words)[:length].encode()

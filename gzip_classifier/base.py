@@ -64,17 +64,19 @@ class BaseClassifier(object):
         """
         return {}
 
-    @property
-    def model(self):
-        """ A writeable version of the data model for this classifier. """
-        if not self.is_ready:
-            raise ValueError('Cannot export un-trained model.')
-
+    def encode_row(self, row):
         def _encode(item):
             if isinstance(item, bytes):
                 return b64encode(item).decode('utf-8')
             else:
                 return b64encode(str(item).encode('utf-8')).decode('utf-8')
+        return ' '.join([_encode(item) for item in row])
+
+    @property
+    def model(self):
+        """ A writeable version of the data model for this classifier. """
+        if not self.is_ready:
+            raise ValueError('Cannot export un-trained model.')
 
         settings = [
             f'# Gzip Classifier Model Version {self.version}',
@@ -84,7 +86,7 @@ class BaseClassifier(object):
         ]
 
         model_data = [
-            ' '.join([_encode(item) for item in row])
+            self.encode_row(row)
             for row in self._model
         ]
 
@@ -93,18 +95,18 @@ class BaseClassifier(object):
             *model_data,
         ]).encode('utf-8')
 
+    def decode_row(self, row:[bytes]):
+        items = [b64decode(item) for item in row]
+        return (
+            items[0],
+            items[1],
+            float(items[2]),
+            items[3].decode('utf-8'),
+        )
+
     @model.setter
     def model(self, value: bytes):
         """ Update the data model for this classifier. """
-
-        def _decode(row: [bytes]):
-            items = [b64decode(item) for item in row]
-            return (
-                items[0],
-                items[1],
-                float(items[2]),
-                items[3].decode('utf-8'),
-            )
 
         def _is_configuration(row: bytes):
             return row[0] == '#'
@@ -123,7 +125,7 @@ class BaseClassifier(object):
 
         for row in value.decode('utf-8').split('\n'):
             if _is_configuration(row):
-                _configure(row)
+                self.decode_row(row)
             else:
                 self._model.append(_decode(row.split()))
 

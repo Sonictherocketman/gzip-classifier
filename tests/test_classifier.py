@@ -94,7 +94,7 @@ def test_deserlialize(test_data, training_data, labels):
 
 
 def test_file_inout_deserlialize(test_data, training_data, labels):
-    classifier = Classifier(training_data, labels, auto_train=True, k=2)
+    classifier = Classifier(training_data=training_data, labels=labels, auto_train=True, k=2)
 
     with open('model.txt', 'wb') as f:
         f.write(classifier.model)
@@ -108,8 +108,8 @@ def test_file_inout_deserlialize(test_data, training_data, labels):
 
 def test_file_inout_smart_deserlialize(test_data, training_data, labels):
     classifier = SmartClassifier(
-        training_data,
-        labels,
+        training_data=training_data,
+        labels=labels,
         auto_train=True,
         k=2,
         quantiles=3,

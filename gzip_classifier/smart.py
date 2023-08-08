@@ -1,6 +1,6 @@
 from gzip import compress
 
-from .classifier import ParallelClassifier
+from .naive import ParallelNaiveClassifier
 from .quick import QuickClassifier
 from .utils import (
     prepare_input,
@@ -50,7 +50,7 @@ class SmartClassifier(QuickClassifier):
         self.index = generate_quantile_index(self._model, self.quantiles)
 
 
-class SmartParallelClassifier(SmartClassifier, ParallelClassifier):
+class SmartParallelClassifier(SmartClassifier, ParallelNaiveClassifier):
     """ This classifier implements the same smart search algorithm based on the
     training distribution as the SmartClassifier, but also provides the ability
     to spread the computation along multiple cores for both training and testing.

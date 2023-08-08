@@ -1,6 +1,8 @@
+from collections import Counter
 from gzip import compress
 from itertools import islice
 from statistics import quantiles
+import zlib
 
 from .types import Model, Index
 
@@ -13,6 +15,10 @@ def calc_distance(x1: bytes, Cx1: int, x2: bytes, Cx2: int):
     x1_x2 = x1 + b' ' + x2
     Cx1_x2 = len(compress(x1_x2))
     return (Cx1_x2 - min(Cx1, Cx2)) / max(Cx1, Cx2)
+
+
+def calc_distance_v2(x1: bytes, compressor: object):
+    return len(compressor.compress(x1) + compressor.flush())
 
 
 def calc_distance_w_args(args):
@@ -29,6 +35,12 @@ def transform(item: str, label: str):
         len(compressed_item),
         label,
     )
+
+
+def transform_v2(item: str, label: str, length: int):
+    dictionary = generate_compression_dictionary(item, length)
+    compressor = zlib.compressobj(zdict=dictionary)
+    return compressor, label
 
 
 def transform_w_args(args: (str, str)):
@@ -132,3 +144,11 @@ def get_likely_bin(index: Index, Cx1: int):
         for positions, lengths in index
         if Cx1 >= lengths[0] and Cx1 <= lengths[1]
     ][0]
+
+
+
+def generate_compression_dictionary(input: str, length: int):
+    # Using the method described here: https://stackoverflow.com/a/2349728
+    counter = Counter(input.lower().split())
+    sorted_words = (word for (word, _) in counter.most_common())
+    return ''.join(sorted_words)[:length].encode()

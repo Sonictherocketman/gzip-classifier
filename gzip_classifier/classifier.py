@@ -17,10 +17,14 @@ class Classifier(NaiveClassifier):
         self,
         chunksize=int(1e10),
         dictionary_size=int(1e10),
+        compressor_kwargs={'level': 9},
+        dictionary_kwargs={},
         **kwargs
     ):
         self.chunksize = chunksize
         self.dictionary_size = dictionary_size
+        self.compressor_kwargs = compressor_kwargs
+        self.dictionary_kwargs = dictionary_kwargs
         super().__init__(**kwargs)
 
     def __repr__(self):
@@ -37,6 +41,8 @@ class Classifier(NaiveClassifier):
             'chunksize': self.chunksize,
             'dictionary_size': self.dictionary_size,
             'tally_method': self.tally_method,
+            'compressor_kwargs': self.compressor_kwargs,
+            'dictionary_kwargs': self.dictionary_kwargs,
         }
 
     def encode_row(self, row):
@@ -54,7 +60,13 @@ class Classifier(NaiveClassifier):
 
     def train(self, training_data, labels):
         self._model = [
-            transform_v2(item, label, self.dictionary_size)
+            transform_v2(
+                item,
+                label,
+                self.dictionary_size,
+                dictionary_kwargs=self.dictionary_kwargs,
+                **self.compressor_kwargs,
+            )
             for (item, label) in self._group_and_sort(training_data, labels)
         ]
 

@@ -32,29 +32,32 @@ class TransparentZstandardCompressionObj:
         return self.compressor.compress(data)
 
 
-def compress(data):
+def compress(data, **compressor_kwargs):
     if zstandard:
-        compressor = zstandard.ZstdCompressor(0)
+        compressor = zstandard.ZstdCompressor(**compressor_kwargs)
         return compressor.compress(data)
     else:
-        return gzip.compress(data)
+        return gzip.compress(data, **compressor_kwargs)
 
 
-def get_compressor(data):
+def get_compressor(dictionary, **compressor_kwargs):
     if zstandard:
-        compressor = zstandard.ZstdCompressor(dict_data=data)
+        compressor = zstandard.ZstdCompressor(
+            dict_data=dictionary,
+            **compressor_kwargs,
+        )
         return TransparentZstandardCompressionObj(compressor)
     else:
-        return zlib.compressobj(zdict=data)
+        return zlib.compressobj(zdict=dictionary, **compressor_kwargs)
 
 
 def prepare_input(value: str):
     return value.encode()
 
 
-def calc_distance(x1: bytes, Cx1: int, x2: bytes, Cx2: int):
+def calc_distance(x1: bytes, Cx1: int, x2: bytes, Cx2: int, **compressor_kwargs):
     x1_x2 = x1 + b' ' + x2
-    Cx1_x2 = len(compress(x1_x2))
+    Cx1_x2 = len(compress(x1_x2, **compressor_kwargs))
     return (Cx1_x2 - min(Cx1, Cx2)) / max(Cx1, Cx2)
 
 
@@ -67,9 +70,9 @@ def calc_distance_w_args(args):
     return calc_distance(x1, Cx1, x2, Cx2), label
 
 
-def transform(item: str, label: str):
+def transform(item: str, label: str, **compressor_kwargs):
     encoded_item = prepare_input(item)
-    compressed_item = compress(encoded_item)
+    compressed_item = compress(encoded_item, **compressor_kwargs)
     return (
         encoded_item,
         compressed_item,
@@ -78,9 +81,15 @@ def transform(item: str, label: str):
     )
 
 
-def transform_v2(item: str, label: str, length: int):
-    dictionary = generate_compression_dictionary(item, length)
-    compressor = get_compressor(dictionary)
+def transform_v2(
+    items: [str],
+    label: str,
+    length: int,
+    dictionary_kwargs={},
+    **compressor_kwargs,
+):
+    dictionary = generate_compression_dictionary(items, length, **dictionary_kwargs)
+    compressor = get_compressor(dictionary, **compressor_kwargs)
     return compressor, label
 
 
@@ -187,11 +196,11 @@ def get_likely_bin(index: Index, Cx1: int):
     ][0]
 
 
-def generate_compression_dictionary(data: [str], length: int):
+def generate_compression_dictionary(data: [str], length: int, **kwargs):
     if zstandard:
         return zstandard.train_dictionary(length, [
             item.encode('utf-8') for item in data
-        ])
+        ], **kwargs)
     else:
         # Using the method described here: https://stackoverflow.com/a/2349728
         words = '\n'.join(data).split()

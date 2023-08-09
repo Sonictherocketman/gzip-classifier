@@ -118,13 +118,17 @@ class NaiveClassifier(BaseClassifier):
 
     def _tabluate(self, results, k, include_all=False):
         if self.tally_method == 'average':
-            tabluated_results = {label: 0 for _, label in results}
+            tabulated_results = {}
             for value, label in results:
-                tabluated_results[label] += value
+                if label not in tabulated_results.keys():
+                    tabulated_results[label] = (0, 0)
+
+                tabulated_results[label][0] += value
+                tabulated_results[label][1] += 1
 
             averaged_results = {
-                key: value / len([label for _, label in results if label == key])
-                for key, value in tabluated_results.items()
+                key: value / count
+                for key, (value, count) in tabulated_results.items()
             }
 
             top_k = list(reversed(Counter(averaged_results).most_common()))[:k]

@@ -121,7 +121,7 @@ class NaiveClassifier(BaseClassifier):
             tabulated_results = {}
             for value, label in results:
                 if label not in tabulated_results.keys():
-                    tabulated_results[label] = (0, 0)
+                    tabulated_results[label] = [0, 0]
 
                 tabulated_results[label][0] += value
                 tabulated_results[label][1] += 1

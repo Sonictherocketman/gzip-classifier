@@ -49,7 +49,7 @@ def get_compressor(data):
 
 
 def prepare_input(value: str):
-    return value.lower().encode()
+    return value.encode()
 
 
 def calc_distance(x1: bytes, Cx1: int, x2: bytes, Cx2: int):
@@ -194,7 +194,7 @@ def generate_compression_dictionary(data: [str], length: int):
         ])
     else:
         # Using the method described here: https://stackoverflow.com/a/2349728
-        words = '\n'.join(data).lower().split()
+        words = '\n'.join(data).split()
         counter = Counter(words)
         sorted_words = (word for (word, _) in counter.most_common())
         return ''.join(sorted_words)[:length].encode('utf-8')

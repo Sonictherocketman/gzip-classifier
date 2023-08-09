@@ -89,6 +89,7 @@ def transform_v2(
     **compressor_kwargs,
 ):
     dictionary = generate_compression_dictionary(items, length, **dictionary_kwargs)
+    dictionary.precompute_compress(**compressor_kwargs)
     compressor = get_compressor(dictionary, **compressor_kwargs)
     return compressor, label
 
